@@ -1,5 +1,15 @@
 ﻿# Event-Driven Stock Signal Engine
 
+ 
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![Redis](https://img.shields.io/badge/Redis-Queue-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Telegram](https://img.shields.io/badge/Telegram-Alerts-26A5E4?logo=telegram&logoColor=white)](https://core.telegram.org/bots/api)
+[![Pytest](https://img.shields.io/badge/Tested%20with-pytest-0A9EDC?logo=pytest&logoColor=white)](https://pytest.org/)
+
+![How It Works](docs/assets/how-it-works.svg)
+
+
 A post-market event-driven stock signal pipeline for Indian equities using NSE public market files.
 The engine ingests daily market data, detects event patterns, scores confidence, filters risk, and sends Telegram alerts for qualified signals.
 
