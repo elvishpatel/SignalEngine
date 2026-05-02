@@ -18,11 +18,6 @@ In simple terms:
 7. Send Telegram alerts.
 8. Backtest alerted signals later.
 
-One-line summary:
-
-```text
-Public market data -> Events -> Signal -> Risk filter -> Telegram alert -> Backtest
-```
 
 ## Important Note About "Realtime"
 
@@ -121,44 +116,8 @@ Important behavior in the current code:
 - if one phase fails, the pipeline logs the failure and continues to the next phase where possible
 - this makes the run more resilient during live operation
 
-## Verified Structure
+## Project Structure
 
-You were right to question this section.
-There are two different views of the project, and my earlier wording made them sound like the same thing.
-
-### 1. Current Local Workspace
-
-This is what exists in your machine right now at the project root. It includes source code plus generated/runtime files:
-
-```text
-.
-|-- .pytest_tmp/
-|-- .test_runtime/
-|-- docs/
-|-- frontend/
-|-- pytest-cache-files-*/
-|-- signal_engine/
-|-- tests/
-|-- .env
-|-- .env.example
-|-- .gitignore
-|-- main.py
-|-- pytest.ini
-|-- README.md
-|-- requirements.txt
-|-- run.txt
-`-- signal_engine.db
-```
-
-Important note:
-
-- `__pycache__/` folders also exist inside `signal_engine/` and `tests/`
-- those are generated automatically by Python and pytest
-- they are not important source folders and should not be treated as part of the logical project design
-
-### 2. Clean Source Structure for GitHub
-
-This is the clean source structure that should be documented and uploaded to GitHub:
 
 ```text
 .
@@ -224,66 +183,6 @@ This is the clean source structure that should be documented and uploaded to Git
 |-- README.md
 `-- requirements.txt
 ```
-
-### 3. Local Runtime Files You Should Not Commit
-
-These files and folders are normal in local development but should not be pushed to GitHub:
-
-```text
-.env
-signal_engine.db
-run.txt
-.venv/
-.pytest_tmp/
-.test_runtime/
-pytest-cache-files-*/
-__pycache__/
-```
-
-These are already covered by `.gitignore` where appropriate.
-
-## Portfolio Frontend
-
-A static portfolio-friendly frontend is included in:
-
-```text
-frontend/
-```
-
-Files:
-
-- `frontend/index.html`
-- `frontend/styles.css`
-- `frontend/app.js`
-
-Purpose:
-
-- present the backend project visually
-- make the system easy to explain in interviews and portfolio reviews
-- generate clean screenshots without needing a running backend UI
-
-How to open it:
-
-```powershell
-start frontend\index.html
-```
-
-Or serve it locally:
-
-```powershell
-python -m http.server 8000
-```
-
-Then open:
-
-```text
-http://localhost:8000/frontend/
-```
-
-Important note:
-
-- this frontend is a showcase page, not a live browser client connected directly to SQLite or Redis
-- it is meant for presentation, explanation, and screenshots
 
 ## Module-by-Module Explanation
 
