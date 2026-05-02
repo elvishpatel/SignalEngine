@@ -1,0 +1,19 @@
+rules:
+  - id: rule_bulk_sector
+    conditions:
+      BULK_DEAL: true
+      SECTOR_ROTATION: true
+    score_boost: 10
+
+  - id: rule_volume_promoter
+    conditions:
+      VOLUME_SPIKE: true
+      PROMOTER_CHANGE: true
+    score_boost: 8
+
+  - id: rule_triple_signal
+    conditions:
+      VOLUME_SPIKE: true
+      BULK_DEAL: true
+      SECTOR_ROTATION: true
+    score_boost: 15

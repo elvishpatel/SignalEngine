@@ -1,0 +1,33 @@
+﻿database:
+  path: signal_engine.db
+
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+
+signal_weights:
+  VOLUME_SPIKE: 0.30
+  BULK_DEAL: 0.35
+  SECTOR_ROTATION: 0.20
+  PROMOTER_CHANGE: 0.15
+
+risk_filter:
+  min_avg_volume: 100000
+  max_volatility: 0.05
+  min_market_return_20d: -5.0
+  min_confidence: 3.0
+  signal_validity_days: 2
+
+alert_threshold: 5.0
+
+volume_spike:
+  zscore_threshold: 2.5
+  lookback_days: 20
+
+sector_rotation:
+  relative_strength_std_threshold: 1.5
+  lookback_days: 5
+
+promoter_change:
+  min_change_pct: 1.0

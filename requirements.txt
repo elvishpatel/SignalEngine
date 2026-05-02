@@ -1,0 +1,9 @@
+﻿pandas
+numpy
+requests
+schedule
+PyYAML
+python-dotenv
+redis
+pytest
+yfinance

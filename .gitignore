@@ -1,0 +1,15 @@
+﻿.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+signal_engine.db
+run.txt
+.pytest_tmp/
+.test_runtime/
+pytest-cache-files-*/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
