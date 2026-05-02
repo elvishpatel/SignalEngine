@@ -1,6 +1,5 @@
-﻿# Event-Driven Stock Signal Engine
+# Event-Driven Stock Signal Engine
 
- 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Redis](https://img.shields.io/badge/Redis-Queue-DC382D?logo=redis&logoColor=white)](https://redis.io/)
@@ -9,42 +8,17 @@
 
 ![How It Works](docs/assets/how-it-works.svg)
 
+A post-market signal pipeline for Indian equities. Pulls NSE public data every evening, detects unusual activity, scores it, filters noise, and fires Telegram alerts for stocks worth watching.
 
-A post-market event-driven stock signal pipeline for Indian equities using NSE public market files.
-The engine ingests daily market data, detects event patterns, scores confidence, filters risk, and sends Telegram alerts for qualified signals.
+No tick-by-tick streaming. No paid data feeds. Just bhavcopy, bulk deals, sector files, and shareholding patterns — processed after market close.
 
-## Overview
+---
 
-After market closes, the pipeline runs in this order:
-
-1. Download daily market data.
-2. Detect unusual market activity.
-3. Convert that activity into events.
-4. Combine same-stock same-day events.
-5. Score them into one confidence value.
-6. Apply rule boosts and risk filters.
-7. Send Telegram alerts.
-8. Backtest alerted signals later.
-
-If Redis isn't running, it falls back to an in-memory queue. If any pipeline stage fails, the rest still run.
-
-## Important Note About "Realtime"
-
-This project is not tick-by-tick intraday streaming.
-It is designed as a post-market or end-of-day pipeline.
-
-Why:
-
-- The main price source is NSE bhavcopy.
-- Bulk deals, sector lists, and promoter/shareholding data are file-based public sources.
-- Those sources are naturally processed after market activity is already recorded.
-
-
-## Architecture Diagram
+## Architecture
 
 ```mermaid
 flowchart TD
-    A[python main.py or python -m signal_engine.main] --> B[run_pipeline]
+    A[python main.py --date] --> B[run_pipeline]
     B --> C[init_db]
 
     B --> D[bhavcopy.py]
@@ -85,39 +59,22 @@ flowchart TD
     B --> Y[PipelineMonitor]
 ```
 
-## How the Pipeline Works
+---
 
-When you run:
+## How it works
 
-```powershell
-python main.py --date 2026-04-29
-```
+1. Downloads NSE bhavcopy and parses OHLCV data
+2. Detects volume spikes, bulk deal activity, sector rotation, and promoter holding changes
+3. Normalizes and deduplicates all events
+4. Pushes them through Redis into a worker queue
+5. Scores grouped events into a single confidence value
+6. Applies rule-based boosts and risk filters
+7. Sends a Telegram alert if the signal clears the threshold
+8. Backtests alerted signals later using forward returns
 
-1. Opens or creates the SQLite database.
-2. Downloads and parses bhavcopy.
-3. Validates price quality.
-4. Stores valid price rows in `prices`.
-5. Downloads bulk deals and emits `BULK_DEAL` events.
-6. Detects `VOLUME_SPIKE` events from historical price/volume data.
-7. Loads sector membership and emits `SECTOR_ROTATION` events.
-8. Downloads promoter/shareholding files and emits `PROMOTER_CHANGE` events.
-9. Normalizes and deduplicates all events.
-10. Pushes normalized events into Redis.
-11. Worker drains the queue.
-12. Worker groups same-stock same-day events.
-13. Scoring engine calculates confidence.
-14. Rule evaluator applies score boosts.
-15. Risk filter rejects unsafe signals.
-16. Telegram alerter sends alerts for qualified signals.
-17. Backtest evaluator later measures performance of alerted signals.
-18. Monitoring logger records pipeline status and queue health.
+Each pipeline phase is wrapped in a safe runner — if one fails, the rest still run. If Redis isn't available, it falls back to an in-memory queue automatically.
 
-Important behavior in the current code:
-
-- each pipeline phase is wrapped in a safe runner
-- if one phase fails, the pipeline logs the failure and continues to the next phase where possible
-- this makes the run more resilient during live operation
-
+---
 
 ## Project layout
 
@@ -135,188 +92,107 @@ signal_engine/
 ├── monitoring/       # structured JSON logs
 ├── db/               # SQLite schema
 └── config/           # settings.yaml, rules.yaml
+
+frontend/             # basic web UI
+tests/                # pytest suite
+main.py               # entry point
 ```
 
-## Configuration Files
+---
 
-### `signal_engine/config/settings.yaml`
+## Setup
 
-Current runtime configuration:
-
-```yaml
-database:
-  path: signal_engine.db
-
-redis:
-  host: localhost
-  port: 6379
-  db: 0
-
-signal_weights:
-  VOLUME_SPIKE: 0.30
-  BULK_DEAL: 0.35
-  SECTOR_ROTATION: 0.20
-  PROMOTER_CHANGE: 0.15
-
-risk_filter:
-  min_avg_volume: 100000
-  max_volatility: 0.05
-  min_market_return_20d: -5.0
-  min_confidence: 3.0
-  signal_validity_days: 2
-
-alert_threshold: 5.0
-
-volume_spike:
-  zscore_threshold: 2.5
-  lookback_days: 20
-
-sector_rotation:
-  relative_strength_std_threshold: 1.5
-  lookback_days: 5
-
-promoter_change:
-  min_change_pct: 1.0
-```
-
-### `signal_engine/config/rules.yaml`
-
-Stores score boosting rule combinations.
-
-### `.env`
-
-Real secrets go here locally:
-
-```env
-TELEGRAM_TOKEN=your_real_bot_token
-TELEGRAM_CHAT_ID=your_real_chat_id
-```
-
-Never commit `.env`.
-
-## Setup and Run Guide
-
-### 1. Clone the repository
-
-```powershell
+1. Clone and enter the repo:
+```bash
 git clone https://github.com/elvishpatel/SignalEngine/
 cd signal_engine
 ```
 
-### 2. Create virtual environment
-
-```powershell
+2. Create and activate a virtual environment:
+```bash
 py -3.10 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 3. Install dependencies
-
-```powershell
+3. Install dependencies:
+```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure Telegram secrets
-
-Copy `.env.example` to `.env` and fill in your real values.
-
-Example:
-
-```env
+4. Copy `.env.example` to `.env` and fill in your Telegram credentials:
+```
 TELEGRAM_TOKEN=your_bot_token_here
 TELEGRAM_CHAT_ID=your_chat_id_here
 ```
 
-### 5. Start Redis
-
-Example using Docker Desktop on Windows:
-
-```powershell
+5. Start Redis:
+```bash
 docker run -d --name redis-local -p 6379:6379 redis:7
 ```
 
-### 6. Run tests
-
-```powershell
-pytest tests -q
-```
-
-### 7. Initialize database
-
-```powershell
+6. Initialize the database:
+```bash
 python -m signal_engine.db.schema
 ```
 
-### 8. Run one manual pipeline
+7. Run tests:
+```bash
+pytest tests -q
+```
 
-```powershell
+8. Run the pipeline:
+```bash
 python main.py --date 2026-04-29
 ```
 
-### 9. Run scheduler mode
-
-```powershell
+9. Or run on a schedule:
+```bash
 python main.py --schedule
 ```
 
-Important scheduler note:
+Keep the machine timezone set to IST if you're scheduling for Indian market hours.
 
-- current code uses the machine local timezone
-- for Indian market automation, keep the machine time set to IST if that is your intended schedule
+---
 
-## Troubleshooting
+## Configuration
 
-### Case 1: `prices > 0` but `events = 0`
+`signal_engine/config/settings.yaml` controls all runtime behaviour.
 
-Meaning:
+| Setting | Default | What it controls |
+|---|---|---|
+| `volume_spike.zscore_threshold` | 2.5 | How unusual volume needs to be |
+| `risk_filter.min_avg_volume` | 100,000 | Minimum liquidity to pass |
+| `risk_filter.max_volatility` | 0.05 | Maximum 20-day volatility |
+| `risk_filter.min_confidence` | 3.0 | Minimum score to create a signal |
+| `alert_threshold` | 5.0 | Minimum score to send an alert |
+| `signal_weights.BULK_DEAL` | 0.35 | Weight in confidence formula |
 
-- data was downloaded and stored
-- no event threshold was crossed
+Rule boosts are in `rules.yaml`. For example, `BULK_DEAL + SECTOR_ROTATION` adds +10 to confidence.
 
-Possible reasons:
+---
 
-- no strong volume spike
-- no bulk deal of significance
-- no strong sector rotation
-- no promoter change above threshold
-- insufficient lookback data for event generation
+## Debugging no alerts
 
-### Case 2: `events > 0` but `signals = 0`
+Quick DB check to find where the pipeline stopped:
 
-Meaning:
+```bash
+python -c "
+import sqlite3
+c = sqlite3.connect('signal_engine.db')
+for t in ['prices','events','signals','alerts']:
+    print(t, c.execute(f'select count(*) from {t}').fetchone()[0])
+"
+```
 
-- events exist
-- worker path did not finish signal creation as expected
+**Prices exist but no events** — no threshold was crossed. Volume wasn't unusual enough, no bulk deals, no sector rotation, or no promoter change above 1%.
 
-Check:
+**Events exist but no signals** — check Redis. Worker may not have drained the queue correctly.
 
-- Redis availability
-- worker logs
-- whether normalized events were pushed and drained correctly
+**Signals exist but no alerts** — confidence is below `alert_threshold` or a risk filter blocked it (low volume, high volatility, bearish market regime, or expired signal).
 
-### Case 3: `signals > 0` but `alerts = 0`
+**Telegram works manually but pipeline sends nothing** — Telegram setup is fine, the blocker is earlier in the chain. Use the DB check above to find where it stopped.
 
-Meaning:
-
-- signal was created
-- confidence threshold or risk filter blocked alerting
-
-Check:
-
-- `confidence`
-- `alert_threshold`
-- liquidity rule
-- volatility rule
-- market regime rule
-- expiry rule
-
-### Case 4: Telegram manual send works but pipeline sends nothing
-
-Meaning:
-
-- Telegram setup is correct
-- the real blocker is event generation or risk filtering
-
+---
 
 ## Contributing
 
